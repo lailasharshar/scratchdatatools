@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chart.js attempt</title>
+    <script src="js/vendor/jquery-3.2.1.min.js"></script>
+    <script src="js/Chart.bundle.min.js"></script>
+</head>
+<body>
+<script>
+    $.urlParam = function(name){
+        var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+        if (results==null){
+            return null;
+        }
+        else{
+            return decodeURI(results[1]) || 0;
+        }
+    };
+
+    var tickers = $.urlParam('ticker').split(',');
+    var startDate = $.urlParam('startDate');
+    var endDate = $.urlParam('endDate');
+    Chart.defaults.global.legend.display = true;
+    function createChart(data, ticker, canvas) {
+        var variablility = findPercentage(data);
+        var ctx = canvas.getContext("2d");
+        var myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: ticker + "(" + parseFloat(Math.round(variablility * 10000) / 10000).toFixed(4) + ")",
+                    fill: false,
+                    data: data,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)',
+                        'rgba(255, 159, 64, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255,99,132,1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    xAxes: [{
+                        type: "time",
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Date'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: 'Price',
+                    }]
+                }
+            }
+        });
+    }
+
+    function makeAChart(ticker, startDate, endDate, chart) {
+        var url = "http://localhost:8899/data/history/" + ticker + "/1/graph";
+        $.ajax({
+            url: url,
+            type: "GET",
+            data: {
+                startDate: startDate,
+                endDate: endDate
+            },
+            dataType: "html",
+            "success": function (data) {
+                console.log(data);
+                var parsedData = JSON.parse(data);
+                createChart(parsedData, ticker, chart);
+            },
+            "error": function (XMLHttpRequest, textStatus, errorThrown) {
+                alert("There is an error getting the data: " + textStatus + ", " + errorThrown);
+            }
+        });
+    }
+    function minPrice(dataset) {
+        var min = dataset[0].y;
+        for (var i = 0; i < dataset.length; i++) {
+           if (dataset[i].y < min)  {
+               min = dataset[i].y;
+           }
+        }
+        console.log(min);
+        return min;
+    }
+
+    function maxPrice(dataset) {
+        var max = dataset[0].y;
+        for (var i = 0; i < dataset.length; i++) {
+            if (dataset[i].y > max)  {
+                max = dataset[i].y;
+            }
+        }
+        console.log(max);
+        return max;
+    }
+
+    function findPercentage(data) {
+        var min = minPrice(data);
+        var max = maxPrice(data);
+        return (max-min)/max;
+    }
+
+    $().ready(function () {
+        //var startDate = "04-29-2018 10:00";
+        //var endDate = "04-29-2018 11:00";
+        for (var i=0; i<tickers.length; i++) {
+            $( "body" ).append( "<div><canvas id='chart" + i + "'></canvas></div>" );
+            var chart = document.getElementById("chart" + i);
+            makeAChart(tickers[i], startDate, endDate, chart);
+        }
+    });
+
+</script>
+</body>
+</html>

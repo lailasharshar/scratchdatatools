@@ -1,0 +1,12 @@
+server:
+  port: 8899
+
+spring:
+  application:
+    name: taskservice
+
+elasticsearch:
+  clustername: elasticsearch
+  host: localhost
+  port: 9300
+
