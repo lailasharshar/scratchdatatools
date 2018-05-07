@@ -35,10 +35,8 @@ public class PriceDataES {
 	}
 
 	public List<PriceData> findByTimeRange(String ticker, Date startDate, Date endDate, int exchange) throws Exception{
-		DateTime dt1 = new DateTime(startDate);
-		DateTime dt2 = new DateTime(endDate);
 		Page<PriceData> data = priceDataRepository.findByUpdateTimeBetweenAndExchangeAndTicker(
-				dt1, dt2, exchange, ticker, PageRequest.of(0, 10000));
+				startDate.getTime(), endDate.getTime(), exchange, ticker, PageRequest.of(0, 10000));
 		return data.getContent();
 	}
 }

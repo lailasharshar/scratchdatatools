@@ -124,7 +124,8 @@ public class DataAnalysis {
 	@CrossOrigin
 	@GetMapping("/data/history/{ticker}/{exchange}/graph")
 	public List<TimeGraph> getPriceDataForGraph(@PathVariable String ticker, @RequestParam String startDate,
-												@RequestParam String endDate, @PathVariable short exchange) throws Exception {
+												@RequestParam String endDate, @PathVariable short exchange,
+												@RequestParam int interval) throws Exception {
 		Date startDateVal = GenUtils.parseDate(startDate, sdf);
 		Date endDateVal = GenUtils.parseDate(endDate, sdf);
 		if (startDateVal == null || endDateVal == null) {
@@ -132,11 +133,39 @@ public class DataAnalysis {
 		}
 		List<PriceData> data = priceDataEs.findByTimeRange(ticker, startDateVal, endDateVal, exchange);
 		if (data != null) {
-			data = data.stream().sorted(Comparator.comparing(PriceData::getUpdateTime)).collect(Collectors.toList());
-			return data.stream().map(d -> new TimeGraph(d.getUpdateTime(), d.getPrice()))
-					.collect(Collectors.toList());
+		    return getSummaryTGList(data, interval);
 		}
 		return new ArrayList<>();
+	}
+
+	private List<TimeGraph> getSummaryTGList(List<PriceData> pd, int interval) {
+		List<PriceData> subList = new ArrayList<>();
+		List<TimeGraph> tgList = new ArrayList<>();
+		List<PriceData> data = pd.stream().sorted(Comparator.comparing(PriceData::getUpdateTime)).collect(Collectors.toList());
+		for (int i=0; i<data.size(); i++) {
+			if (i % interval == 0 && i > 0) {
+				TimeGraph tg = getSummaryTG(subList);
+				if (tg != null) {
+					tgList.add(tg);
+					subList.clear();
+				}
+			}
+			subList.add(data.get(i));
+		}
+		return tgList;
+	}
+
+	private TimeGraph getSummaryTG(List<PriceData> pd) {
+		if (pd == null || pd.size() == 0) {
+			return null;
+		}
+		long totalTime = 0;
+		double totalPrice = 0;
+		for (PriceData p : pd) {
+			totalTime += p.getUpdateTime().getTime();
+			totalPrice += p.getPrice();
+		}
+		return new TimeGraph(new Date(totalTime/pd.size()), totalPrice/pd.size());
 	}
 
 	@CrossOrigin
