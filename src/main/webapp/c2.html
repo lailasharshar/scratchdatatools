@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Chart</title>
+    <script src="js/vendor/jquery-3.2.1.min.js"></script>
+    <script src="js/Chart.bundle.min.js"></script>
+    <link rel="stylesheet" href="css/graphs.css" type="text/css">
+</head>
+<body>
+<div class="heading" style="width: 100%">Ticker Analysis</div>
+<div>
+    <form>
+        <table>
+            <tr>
+                <td>Start Date:</td>
+                <td><input type="text" id="startTime" name="startTime"></td>
+                <td>End Date:</td>
+                <td><input type="text" id="endTime" name="endTime"></td>
+                <td>Interval:</td>
+                <td><input type="text" id="interval" name="interval"></td>
+                <td>Tickers:</td>
+                <td><input type="text" id="tickers" name="tickers"></td>
+                <td><input type="button" id="update" name="update" value="Update"></td>
+            </tr>
+        </table>
+    </form>
+</div>
+<br>
+<hr>
+<canvas id="myChart" width="400" height="250"></canvas>
+
+</body>
+<script>
+    $.urlParam = function (name) {
+        var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+        if (results == null) {
+            return null;
+        }
+        else {
+            return decodeURI(results[1]) || 0;
+        }
+    };
+
+    var tickers = $.urlParam('ticker').split(',');
+    var startDate = $.urlParam('startDate');
+    var endDate = $.urlParam('endDate');
+    var interval = $.urlParam('interval');
+    $('#startTime').val(startDate);
+    $('#endTime').val(endDate);
+    $('#interval').val(interval);
+    $('#tickers').val(tickers);
+    var ctx = document.getElementById('myChart');
+
+    var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: []
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    type: "time",
+                    display: true,
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Date'
+                    }
+                }],
+                yAxes: [{
+                    display: true,
+                    scaleLabel: 'Price',
+                }]
+            }
+        }
+    });
+    function getNextColor() {
+        var nextColor = colors.shift();
+        colors.push(nextColor);
+        return nextColor;
+    }
+
+    var colors = ["blue", "green", "yellow", "orange", "red", "purple"];
+
+    function addData(ticker) {
+        var color = getNextColor();
+        var url = "http://localhost:8899/data/history/" + ticker + "/1/graph";
+        $.ajax({
+            url: url,
+            type: "GET",
+            data: {
+                startDate: startDate,
+                endDate: endDate,
+                interval: interval
+            },
+            dataType: "html",
+            "success": function (data) {
+                var parsedData = JSON.parse(data);
+                var dataSet = {
+                    label: ticker,
+                    fill: false,
+                    data: parsedData,
+                    backgroundColor: color
+                };
+                myChart.data.datasets.push(dataSet);
+                myChart.update();
+            },
+            "error": function (XMLHttpRequest, textStatus, errorThrown) {
+                alert("There is an error getting the data: " + textStatus + ", " + errorThrown);
+            }
+        });
+    }
+    $().ready(function () {
+        for (var i = 0; i < tickers.length; i++) {
+            addData(tickers[i]);
+        }
+        $('#update').on('click', function() {
+            window.location = "c2.html?startDate=" + $('#startTime').val() +
+                "&endDate=" + $('#endTime').val() +
+                "&interval=" + $('#interval').val() +
+                "&ticker=" + $('#tickers').val();
+        });
+    });
+</script>
+</html>

@@ -3,6 +3,7 @@ package com.sharshar.scratchdatatools.controllers;
 import com.sharshar.scratchdatatools.beans.PriceData;
 import com.sharshar.scratchdatatools.repository.PriceDataES;
 import com.sharshar.scratchdatatools.utils.GenUtils;
+import com.sharshar.scratchdatatools.utils.GraphUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -20,32 +21,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 public class DataAnalysis {
-
-	public class TimeGraph {
-		private Date t;
-		private double y;
-
-		public TimeGraph(Date t, double y) {
-			this.t = t;
-			this.y = y;
-		}
-
-		public Date getT() {
-			return t;
-		}
-
-		public void setT(Date t) {
-			this.t = t;
-		}
-
-		public double getY() {
-			return y;
-		}
-
-		public void setY(double y) {
-			this.y = y;
-		}
-	}
 
 	public class PriceDataLight {
 		private String ticker;
@@ -69,7 +44,6 @@ public class DataAnalysis {
 		public Date getUpdateDate() {
 			return updateDate;
 		}
-
 	}
 
 	@Resource
@@ -123,8 +97,8 @@ public class DataAnalysis {
 
 	@CrossOrigin
 	@GetMapping("/data/history/{ticker}/{exchange}/graph")
-	public List<TimeGraph> getPriceDataForGraph(@PathVariable String ticker, @RequestParam String startDate,
-												@RequestParam String endDate, @PathVariable short exchange) throws Exception {
+	public List<GraphUtils.TimeGraph> getPriceDataForGraph(@PathVariable String ticker, @RequestParam String startDate,
+				@RequestParam String endDate, @PathVariable short exchange, @RequestParam int interval) throws Exception {
 		Date startDateVal = GenUtils.parseDate(startDate, sdf);
 		Date endDateVal = GenUtils.parseDate(endDate, sdf);
 		if (startDateVal == null || endDateVal == null) {
@@ -132,17 +106,25 @@ public class DataAnalysis {
 		}
 		List<PriceData> data = priceDataEs.findByTimeRange(ticker, startDateVal, endDateVal, exchange);
 		if (data != null) {
-			data = data.stream().sorted(Comparator.comparing(PriceData::getUpdateTime)).collect(Collectors.toList());
-			return data.stream().map(d -> new TimeGraph(d.getUpdateTime(), d.getPrice()))
-					.collect(Collectors.toList());
+			return GraphUtils.getIntervals(data, interval);
 		}
 		return new ArrayList<>();
 	}
 
+	/**
+	 * Get the ratios of GAS to NEO
+	 *
+	 * @param startDate - date to start
+	 * @param endDate - date to end
+	 * @param exchange - the exchange to do it for
+	 * @param interval - the sample rate (it combines the interval number of items into 2 by averaging values)
+	 * @return the graph data
+	 * @throws Exception if there is an issue getting the data
+	 */
 	@CrossOrigin
-	@GetMapping("/data/history/{exchange}/neoration/graph")
-	public List<TimeGraph> getPriceDataForGraph(@RequestParam String startDate,
-												@RequestParam String endDate, @PathVariable short exchange) throws Exception {
+	@GetMapping("/data/history/{exchange}/neoratio/graph")
+	public List<GraphUtils.TimeGraph> getPriceDataForGraph(@RequestParam String startDate,
+				@RequestParam String endDate, @PathVariable short exchange, @RequestParam int interval) throws Exception {
 
 		Date startDateVal = GenUtils.parseDate(startDate, sdf);
 		Date endDateVal = GenUtils.parseDate(endDate, sdf);
@@ -159,12 +141,15 @@ public class DataAnalysis {
 		}
 		neoPrices = neoPrices.stream().sorted(Comparator.comparing(PriceData::getUpdateTime)).collect(Collectors.toList());
 		gasPrices = gasPrices.stream().sorted(Comparator.comparing(PriceData::getUpdateTime)).collect(Collectors.toList());
-		List<TimeGraph> ratios = new ArrayList<>();
-		for (int i=0; i<neoPrices.size(); i++) {
-			double priceNeo = neoPrices.get(i).getPrice();
-			if (i < gasPrices.size()) {
-				double priceGas = gasPrices.get(i).getPrice();
-				ratios.add(new TimeGraph(neoPrices.get(i).getUpdateTime(), priceGas / priceNeo));
+		List<GraphUtils.TimeGraph> ratios = new ArrayList<>();
+		GraphUtils g = new GraphUtils();
+		List<GraphUtils.TimeGraph> neoGraphs = GraphUtils.getIntervals(neoPrices, interval);
+		List<GraphUtils.TimeGraph> gasGraphs = GraphUtils.getIntervals(gasPrices, interval);
+		for (int i=0; i<neoGraphs.size(); i++) {
+			if (i < gasGraphs.size()) {
+				double pricesNeo = neoGraphs.get(i).getY();
+				double pricesGas = gasGraphs.get(i).getY();
+				ratios.add(g.new TimeGraph(neoGraphs.get(i).getT(), pricesGas/pricesNeo));
 			}
 		}
 		return ratios;

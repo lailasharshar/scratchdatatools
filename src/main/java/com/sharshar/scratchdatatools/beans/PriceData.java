@@ -53,31 +53,35 @@ public class PriceData {
 		return price;
 	}
 
-	public void setPrice(Double price) {
+	public PriceData setPrice(Double price) {
 		this.price = price;
+		return this;
 	}
 
 	public Date getUpdateTime() {
 		return updateTime;
 	}
 
-	public void setUpdateTime(Date updateTime) {
+	public PriceData setUpdateTime(Date updateTime) {
 		this.updateTime = updateTime;
+		return this;
 	}
 
 	public String getTicker() {
 		return ticker;
 	}
 
-	public void setTicker(String ticker) {
+	public PriceData setTicker(String ticker) {
 		this.ticker = ticker;
+		return this;
 	}
 
 	public short getExchange() {
 		return exchange;
 	}
 
-	public void setExchange(short exchange) {
+	public PriceData setExchange(short exchange) {
 		this.exchange = exchange;
+		return this;
 	}
 }

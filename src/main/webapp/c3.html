@@ -5,8 +5,27 @@
     <title>Chart.js attempt</title>
     <script src="js/vendor/jquery-3.2.1.min.js"></script>
     <script src="js/Chart.bundle.min.js"></script>
+    <link rel="stylesheet" href="css/graphs.css" type="text/css">
 </head>
 <body>
+<div class="heading" style="width: 100%">GAS/NEO Ratio</div>
+<div>
+    <form>
+        <table>
+            <tr>
+                <td>Start Date:</td>
+                <td><input type="text" id="startTime" name="startTime"></td>
+                <td>End Date:</td>
+                <td><input type="text" id="endTime" name="endTime"></td>
+                <td>Interval:</td>
+                <td><input type="text" id="interval" name="interval"></td>
+                <td><input type="button" id="update" name="update" value="Update"></td>
+            </tr>
+        </table>
+    </form>
+</div>
+<br>
+<hr>
 <script>
     $.urlParam = function (name) {
         var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
@@ -20,6 +39,10 @@
 
     var startDate = $.urlParam('startDate');
     var endDate = $.urlParam('endDate');
+    var interval = $.urlParam('interval');
+    $('#startTime').val(startDate);
+    $('#endTime').val(endDate);
+    $('#interval').val(interval);
     Chart.defaults.global.legend.display = true;
 
     function createChart(data, canvas) {
@@ -71,12 +94,13 @@
     }
 
     function makeAChart(startDate, endDate) {
-        var url = "http://localhost:8999/data/history/1/neoration/graph";
+        var url = "http://localhost:8899/data/history/1/neoratio/graph";
         $.ajax({
             url: url,
             type: "GET",
             data: {
                 startDate: startDate,
+                interval: interval,
                 endDate: endDate
             },
             dataType: "html",
@@ -121,6 +145,12 @@
         $("body").append("<div><canvas id='chart'></canvas></div>");
         var chart = document.getElementById("chart");
         makeAChart(startDate, endDate, chart);
+
+        $('#update').on('click', function() {
+            window.location = "c3.html?startDate=" + $('#startTime').val() +
+                "&endDate=" + $('#endTime').val() +
+                "&interval=" + $('#interval').val();
+        });
     });
 
 </script>
