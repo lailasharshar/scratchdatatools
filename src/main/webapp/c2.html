@@ -14,13 +14,21 @@
         <table>
             <tr>
                 <td>Start Date:</td>
-                <td><input type="text" id="startTime" name="startTime"></td>
+                <td><input type="text" id="startTime" name="startTime" style="width:70px;"></td>
                 <td>End Date:</td>
-                <td><input type="text" id="endTime" name="endTime"></td>
+                <td><input type="text" id="endTime" name="endTime" style="width:70px;"></td>
                 <td>Interval:</td>
-                <td><input type="text" id="interval" name="interval"></td>
+                <td><input type="text" id="interval" name="interval" style="width:70px;"></td>
                 <td>Tickers:</td>
                 <td><input type="text" id="tickers" name="tickers"></td>
+                <td>Exchange:</td>
+                <td>
+                    <select id="exchange" name="exchange">
+                        <option value="0">&lt;Select&gt;</option>
+                        <option value="1">Binance</option>
+                        <option value="2">CryptoCompare</option>
+                    </select>
+                </td>
                 <td><input type="button" id="update" name="update" value="Update"></td>
             </tr>
         </table>
@@ -46,10 +54,12 @@
     var startDate = $.urlParam('startDate');
     var endDate = $.urlParam('endDate');
     var interval = $.urlParam('interval');
+    var exchange = $.urlParam('exchange');
     $('#startTime').val(startDate);
     $('#endTime').val(endDate);
     $('#interval').val(interval);
     $('#tickers').val(tickers);
+    $('#exchange').val(exchange);
     var ctx = document.getElementById('myChart');
 
     var myChart = new Chart(ctx, {
@@ -84,7 +94,7 @@
 
     function addData(ticker) {
         var color = getNextColor();
-        var url = "http://localhost:8899/data/history/" + ticker + "/1/graph";
+        var url = "http://localhost:8999/data/history/" + ticker + "/" + exchange + "/graph";
         $.ajax({
             url: url,
             type: "GET",
@@ -118,7 +128,8 @@
             window.location = "c2.html?startDate=" + $('#startTime').val() +
                 "&endDate=" + $('#endTime').val() +
                 "&interval=" + $('#interval').val() +
-                "&ticker=" + $('#tickers').val();
+                "&ticker=" + $('#tickers').val()
+                "&exchange=" + $('#exchange').val();
         });
     });
 </script>
